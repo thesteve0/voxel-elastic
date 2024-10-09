@@ -1,0 +1,365 @@
+{
+ "cells": [
+  {
+   "metadata": {},
+   "cell_type": "markdown",
+   "source": "",
+   "id": "27b51ada7dabd576"
+  },
+  {
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2024-10-09T22:14:04.128624Z",
+     "start_time": "2024-10-09T22:14:04.074260Z"
+    }
+   },
+   "cell_type": "code",
+   "source": [
+    "import fiftyone as fo\n",
+    "import fiftyone.brain as fob\n",
+    "import fiftyone.zoo as foz\n",
+    "\n",
+    "dataset = foz.load_zoo_dataset(\"quickstart\")\n",
+    "\n",
+    "# Reset the brain run indexes - only run if this is a new mongodb instance for fifty one OR\n",
+    "# you manually deleted a brain run\n",
+    "# dataset.delete_brain_run(\"es_idx_clip\")\n",
+    "dataset.delete_brain_run(\"es_idx_alex\")\n",
+    "dataset.delete_brain_run(\"clip_viz\")\n",
+    "dataset.delete_brain_run(\"alex_viz\")\n"
+   ],
+   "id": "1a81fe81d5b1935",
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Dataset already downloaded\n",
+      "Loading existing dataset 'quickstart'. To reload from disk, either delete the existing dataset or provide a custom `dataset_name` to use\n"
+     ]
+    }
+   ],
+   "execution_count": 8
+  },
+  {
+   "metadata": {},
+   "cell_type": "markdown",
+   "source": "Loaded the dataset now let's open the view",
+   "id": "ec35699cd06a36ab"
+  },
+  {
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2024-10-09T22:09:40.974718Z",
+     "start_time": "2024-10-09T22:09:35.811280Z"
+    }
+   },
+   "cell_type": "code",
+   "source": [
+    "# auto=false prevents the app interface from opening in the notebook\n",
+    "session = fo.launch_app(dataset, auto=False)\n",
+    "            "
+   ],
+   "id": "e9f7937dd24982bb",
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Session launched. Run `session.show()` to open the App in a cell output.\n"
+     ]
+    }
+   ],
+   "execution_count": 2
+  },
+  {
+   "metadata": {},
+   "cell_type": "markdown",
+   "source": "Now we make the embeddings and put them into elasticsearch",
+   "id": "8ed6cc50ca454d41"
+  },
+  {
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2024-10-09T22:14:15.227629Z",
+     "start_time": "2024-10-09T22:14:10.598678Z"
+    }
+   },
+   "cell_type": "code",
+   "source": [
+    "es_idx_clip = fob.compute_similarity(\n",
+    "    dataset,    \n",
+    "    model=\"clip-vit-base32-torch\",\n",
+    "    brain_key=\"es_idx_clip\",\n",
+    "    backend=\"elasticsearch\",\n",
+    "    hosts=[\"http://localhost:9200\"],           \n",
+    "    username= \"elastic\",\n",
+    "    password=\"cdBfWA3A\",                                               \n",
+    "    metric=\"cosine\"\n",
+    ")"
+   ],
+   "id": "3332e8f15e0a3a8",
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Computing embeddings...\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/home/spousty/.virtualenvs/voxel51/lib64/python3.12/site-packages/fiftyone/brain/internal/core/elasticsearch.py:310: ElasticsearchWarning: this request accesses system indices: [.kibana_security_session_1, .kibana_analytics_8.15.2_001, .apm-custom-link, .kibana_alerting_cases_8.15.2_001, .kibana_task_manager_8.15.2_001, .apm-agent-configuration, .kibana_8.15.2_001, .security-7, .kibana_security_solution_8.15.2_001, .kibana_ingest_8.15.2_001], but in a future major version, direct access to system indices will be prevented by default\n",
+      "  return self._client.indices.get_alias().keys()\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      " 100% |█████████████████| 200/200 [3.4s elapsed, 0s remaining, 74.0 samples/s]      \n"
+     ]
+    }
+   ],
+   "execution_count": 9
+  },
+  {
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2024-10-09T21:44:40.209592Z",
+     "start_time": "2024-10-09T21:44:19.705474Z"
+    }
+   },
+   "cell_type": "code",
+   "source": [
+    "es_idx_alex = fob.compute_similarity(\n",
+    "    dataset,\n",
+    "    model=\"alexnet-imagenet-torch\",\n",
+    "    brain_key=\"es_idx_alex\",\n",
+    "    backend=\"elasticsearch\",\n",
+    "    hosts=[\"http://localhost:9200\"],\n",
+    "    username= \"elastic\",\n",
+    "    password=\"cdBfWA3A\",\n",
+    "    metric=\"cosine\"\n",
+    ")"
+   ],
+   "id": "605f1f660876fbd6",
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Downloading model from 'https://download.pytorch.org/models/alexnet-owt-4df8aa71.pth'...\n",
+      " 100% |██████|    1.8Gb/1.8Gb [7.9s elapsed, 0s remaining, 249.6Mb/s]       \n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "Downloading: \"https://download.pytorch.org/models/alexnet-owt-7be5be79.pth\" to /home/spousty/.cache/torch/hub/checkpoints/alexnet-owt-7be5be79.pth\n",
+      "100%|██████████| 233M/233M [00:08<00:00, 30.5MB/s] \n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Computing embeddings...\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/home/spousty/.virtualenvs/voxel51/lib64/python3.12/site-packages/fiftyone/brain/internal/core/elasticsearch.py:310: ElasticsearchWarning: this request accesses system indices: [.kibana_security_session_1, .kibana_analytics_8.15.2_001, .apm-custom-link, .kibana_alerting_cases_8.15.2_001, .kibana_task_manager_8.15.2_001, .apm-agent-configuration, .kibana_8.15.2_001, .security-7, .kibana_security_solution_8.15.2_001, .kibana_ingest_8.15.2_001], but in a future major version, direct access to system indices will be prevented by default\n",
+      "  return self._client.indices.get_alias().keys()\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      " 100% |█████████████████| 200/200 [2.6s elapsed, 0s remaining, 113.2 samples/s]      \n"
+     ]
+    }
+   ],
+   "execution_count": 6
+  },
+  {
+   "metadata": {},
+   "cell_type": "markdown",
+   "source": "Time to do a query and change the session view",
+   "id": "58f4fea42b13af05"
+  },
+  {
+   "metadata": {},
+   "cell_type": "code",
+   "source": [
+    "# query = (\"a cat\"    )\n",
+    "# view2 = dataset.sort_by_similarity(query, k=10, brain_key=\"es_idx_clip\")\n",
+    "# session.view = view2    \n",
+    "\n",
+    "# # Query by sample ID\n",
+    "# query = dataset.first().id\n",
+    "# view = dataset.sort_by_similarity(query, k=10, brain_key=\"es_idx_clip\")\n",
+    "# session.view = view     \n"
+   ],
+   "id": "8d47a5e02464fc43",
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "metadata": {},
+   "cell_type": "markdown",
+   "source": "Now let's look at some other types of queries       ",
+   "id": "25d587e688e9c445"
+  },
+  {
+   "metadata": {},
+   "cell_type": "markdown",
+   "source": [
+    "If you do multiple runs of the model look at this doc to explain the already exisiting run index\n",
+    "https://voxel51.com/blog/fiftyone-computer-vision-tips-and-tricks-july-28-2023/\n",
+    "\n",
+    "To start the demo you need to \n",
+    "1. start up the mongodb container in podman\n",
+    "2. use the elasticsearch script in ~/bin/elastic-start-local \n",
+    "3. repo https://github.com/elastic/elastic-start-local \n",
+    "4. `docker compose up -d`\n",
+    "5. `docker compose stop`\n",
+    "6. `docker compose up --wait`  (restarts the service\n",
+    "7. password and connection info are .env found in the same directory"
+   ],
+   "id": "79148aa6dcbea0d8"
+  },
+  {
+   "metadata": {},
+   "cell_type": "code",
+   "source": "    ",
+   "id": "5d68cc5266acabba",
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2024-10-09T21:45:04.136679Z",
+     "start_time": "2024-10-09T21:44:50.392058Z"
+    }
+   },
+   "cell_type": "code",
+   "source": [
+    "clip_viz = fob.compute_visualization(dataset, embeddings=es_idx_clip, brain_key='clip_viz')\n",
+    "clip_alex = fob.compute_visualization(dataset, embeddings=es_idx_alex, brain_key='alex_viz')\n"
+   ],
+   "id": "1d834bd18cdead00",
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Generating visualization...\n",
+      "UMAP( verbose=True)\n",
+      "Wed Oct  9 14:44:55 2024 Construct fuzzy simplicial set\n",
+      "Wed Oct  9 14:44:55 2024 Finding Nearest Neighbors\n",
+      "Wed Oct  9 14:44:57 2024 Finished Nearest Neighbor Search\n",
+      "Wed Oct  9 14:44:59 2024 Construct embedding\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "Epochs completed:   0%|            0/500 [00:00]"
+      ],
+      "application/vnd.jupyter.widget-view+json": {
+       "version_major": 2,
+       "version_minor": 0,
+       "model_id": "f652594fe90243a38fe3c0e9b77e2d89"
+      }
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\tcompleted  0  /  500 epochs\n",
+      "\tcompleted  50  /  500 epochs\n",
+      "\tcompleted  100  /  500 epochs\n",
+      "\tcompleted  150  /  500 epochs\n",
+      "\tcompleted  200  /  500 epochs\n",
+      "\tcompleted  250  /  500 epochs\n",
+      "\tcompleted  300  /  500 epochs\n",
+      "\tcompleted  350  /  500 epochs\n",
+      "\tcompleted  400  /  500 epochs\n",
+      "\tcompleted  450  /  500 epochs\n",
+      "Wed Oct  9 14:45:01 2024 Finished embedding\n",
+      "Generating visualization...\n",
+      "UMAP( verbose=True)\n",
+      "Wed Oct  9 14:45:02 2024 Construct fuzzy simplicial set\n",
+      "Wed Oct  9 14:45:02 2024 Finding Nearest Neighbors\n",
+      "Wed Oct  9 14:45:02 2024 Finished Nearest Neighbor Search\n",
+      "Wed Oct  9 14:45:02 2024 Construct embedding\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "Epochs completed:   0%|            0/500 [00:00]"
+      ],
+      "application/vnd.jupyter.widget-view+json": {
+       "version_major": 2,
+       "version_minor": 0,
+       "model_id": "9532acdbc68b4371a408dd56dab9a1e0"
+      }
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\tcompleted  0  /  500 epochs\n",
+      "\tcompleted  50  /  500 epochs\n",
+      "\tcompleted  100  /  500 epochs\n",
+      "\tcompleted  150  /  500 epochs\n",
+      "\tcompleted  200  /  500 epochs\n",
+      "\tcompleted  250  /  500 epochs\n",
+      "\tcompleted  300  /  500 epochs\n",
+      "\tcompleted  350  /  500 epochs\n",
+      "\tcompleted  400  /  500 epochs\n",
+      "\tcompleted  450  /  500 epochs\n",
+      "Wed Oct  9 14:45:04 2024 Finished embedding\n"
+     ]
+    }
+   ],
+   "execution_count": 7
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 2
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython2",
+   "version": "2.7.6"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

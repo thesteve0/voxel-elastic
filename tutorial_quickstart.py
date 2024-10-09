@@ -14,7 +14,7 @@ elasticsearch_index = fob.compute_similarity(
     backend="elasticsearch",
     hosts="http://localhost:9200",
     username="elastic",
-    password="vwzf81Q9",
+    password="Y5OdqZyHYXFo2UweLReg",
     #embeddings=False,
     metric="cosine",
 )
@@ -25,9 +25,9 @@ session = fo.launch_app(dataset)
 # query = np.random.rand(512)  # matches the dimension of CLIP embeddings
 # view1 = dataset.sort_by_similarity(query, k=10, brain_key="elasticsearch_index")
 
-# # Query by sample ID
-# query = dataset.first().id
-# view = dataset.sort_by_similarity(query, k=10, brain_key="elasticsearch_index")
+    # # Query by sample ID
+    # query = dataset.first().id
+    # view = dataset.sort_by_similarity(query, k=10, brain_key="elasticsearch_index")`
 
 # # Query by a list of IDs
 # query = [dataset.first().id, dataset.last().id]
@@ -35,7 +35,7 @@ session = fo.launch_app(dataset)
 
 # Query by text prompt
 query = "a photo of a dog"
-view2 = dataset.sort_by_similarity(query, k=10, brain_key="elasticsearch_index", hosts="http://localhost:9200")
+view2 = dataset.sort_by_similarity(query, k=2, brain_key="elasticsearch_index", hosts="http://localhost:9200")
 session.view = view2
 #session.view = view2
 
